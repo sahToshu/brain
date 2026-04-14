@@ -6,16 +6,20 @@ interface TournamentFiltersProps {
   primaryColor: string;
 }
 
-export function TournamentFilters({ selectedFilters, onFilterChange, primaryColor }: TournamentFiltersProps) {
+export function TournamentFilters({
+  selectedFilters,
+  onFilterChange,
+  primaryColor,
+}: TournamentFiltersProps) {
   const filters = [
-    { id: 'registration', label: 'Registration open' },
-    { id: 'running', label: 'Running' },
-    { id: 'finished', label: 'Finished' },
+    { id: 'registration', label: 'Реєстрацію відкрито' },
+    { id: 'running', label: 'Активні' },
+    { id: 'finished', label: 'Завершені' },
   ];
 
   const toggleFilter = (filterId: string) => {
     if (selectedFilters.includes(filterId)) {
-      onFilterChange(selectedFilters.filter(f => f !== filterId));
+      onFilterChange(selectedFilters.filter((filter) => filter !== filterId));
     } else {
       onFilterChange([...selectedFilters, filterId]);
     }
@@ -43,7 +47,7 @@ export function TournamentFilters({ selectedFilters, onFilterChange, primaryColo
       </div>
 
       <div className="space-y-2">
-        {filters.map(filter => (
+        {filters.map((filter) => (
           <button
             key={filter.id}
             onClick={() => toggleFilter(filter.id)}
@@ -51,15 +55,14 @@ export function TournamentFilters({ selectedFilters, onFilterChange, primaryColo
             style={{
               backgroundColor: selectedFilters.includes(filter.id) ? `${primaryColor}20` : '#1a1a1f',
               color: selectedFilters.includes(filter.id) ? primaryColor : '#9CA3AF',
-              borderLeft: selectedFilters.includes(filter.id) ? `3px solid ${primaryColor}` : '3px solid transparent'
+              borderLeft: selectedFilters.includes(filter.id)
+                ? `3px solid ${primaryColor}`
+                : '3px solid transparent',
             }}
           >
             <span>{filter.label}</span>
             {selectedFilters.includes(filter.id) && (
-              <div 
-                className="w-2 h-2 rounded-full"
-                style={{ backgroundColor: primaryColor }}
-              />
+              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: primaryColor }} />
             )}
           </button>
         ))}
@@ -67,10 +70,9 @@ export function TournamentFilters({ selectedFilters, onFilterChange, primaryColo
 
       <div className="mt-4 pt-4 border-t border-[#1a1a1f]">
         <div className="text-[#9CA3AF] text-xs">
-          {selectedFilters.length === 0 
-            ? 'Показано всі турніри' 
-            : `Активні фільтри: ${selectedFilters.length}`
-          }
+          {selectedFilters.length === 0
+            ? 'Показано всі турніри'
+            : `Активні фільтри: ${selectedFilters.length}`}
         </div>
       </div>
     </div>
