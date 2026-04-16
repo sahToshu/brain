@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Header } from './components/Header';
 import { TournamentGrid } from './components/TournamentGrid';
 import { SupportButton } from './components/SupportButton';
@@ -9,11 +9,13 @@ import type { RegistrationData } from './components/RegistrationModal';
 import { TournamentWorkspace } from './components/TournamentWorkspace';
 import { TaskListModal } from './components/TaskListModal';
 import { UserRegistrationModal } from './components/UserRegistrationModal';
+import { UserLoginModal } from './components/UserLoginModal';
 import { ResultsModal } from './components/ResultsModal';
 import { INITIAL_TOURNAMENTS } from './data/tournaments';
-import { buildUserAccount } from './lib/user';
+import { loginUser, registerUser } from './lib/auth';
+import { clearStoredSession, loadStoredSession, persistSession } from './lib/session';
 import type { Tournament } from './types/tournament';
-import type { AppLanguage, AppUser, UserRegistrationData, UserSettings } from './types/user';
+import type { AppLanguage, AppUser, UserLoginData, UserRegistrationData, UserSettings } from './types/user';
 
 function App() {
   const [primaryColor, setPrimaryColor] = useState('#5B2EFF');
@@ -24,10 +26,24 @@ function App() {
   const [isRegistrationModalOpen, setIsRegistrationModalOpen] = useState(false);
   const [isTaskListModalOpen, setIsTaskListModalOpen] = useState(false);
   const [isUserRegistrationModalOpen, setIsUserRegistrationModalOpen] = useState(false);
+  const [isUserLoginModalOpen, setIsUserLoginModalOpen] = useState(false);
   const [isResultsModalOpen, setIsResultsModalOpen] = useState(false);
   const [selectedTournament, setSelectedTournament] = useState<Tournament | null>(null);
   const [currentView, setCurrentView] = useState<'tournaments' | 'workspace'>('tournaments');
   const [allTournaments, setAllTournaments] = useState<Tournament[]>(INITIAL_TOURNAMENTS);
+
+  useEffect(() => {
+    const storedSession = loadStoredSession();
+
+    if (!storedSession) {
+      return;
+    }
+
+    setCurrentUser(storedSession.user);
+    setCurrentUserSettings(storedSession.settings);
+    setPrimaryColor(storedSession.settings.primaryColor);
+    setLanguage(storedSession.settings.language as AppLanguage);
+  }, []);
 
   const getFilteredTournaments = () => {
     if (selectedFilters.length === 0) {
@@ -61,26 +77,44 @@ function App() {
     );
   };
 
-  const handleUserRegistration = (data: UserRegistrationData) => {
-    const account = buildUserAccount(data, {
-      language,
-      primaryColor,
-    });
+  const applyAuthenticatedUser = (user: AppUser, settings: UserSettings) => {
+    setCurrentUser(user);
+    setCurrentUserSettings(settings);
+    setPrimaryColor(settings.primaryColor);
+    setLanguage(settings.language as AppLanguage);
+    persistSession(user, settings);
+  };
 
-    setCurrentUser(account.user);
-    setCurrentUserSettings(account.settings);
-    setPrimaryColor(account.settings.primaryColor);
-    setLanguage(account.settings.language);
+  const handleUserRegistration = async (data: UserRegistrationData) => {
+    const account = await registerUser(data);
+
+    applyAuthenticatedUser(account.user as AppUser, account.settings as UserSettings);
+    setIsUserRegistrationModalOpen(false);
+  };
+
+  const handleUserLogin = async (data: UserLoginData) => {
+    const account = await loginUser(data);
+
+    applyAuthenticatedUser(account.user as AppUser, account.settings as UserSettings);
+    setIsUserLoginModalOpen(false);
   };
 
   const handleColorChange = (color: string) => {
     setPrimaryColor(color);
     setCurrentUserSettings((previousSettings) =>
       previousSettings
-        ? {
-            ...previousSettings,
-            primaryColor: color,
-          }
+        ? (() => {
+            const nextSettings = {
+              ...previousSettings,
+              primaryColor: color,
+            };
+
+            if (currentUser) {
+              persistSession(currentUser, nextSettings);
+            }
+
+            return nextSettings;
+          })()
         : previousSettings,
     );
   };
@@ -89,10 +123,18 @@ function App() {
     setLanguage(nextLanguage);
     setCurrentUserSettings((previousSettings) =>
       previousSettings
-        ? {
-            ...previousSettings,
-            language: nextLanguage,
-          }
+        ? (() => {
+            const nextSettings = {
+              ...previousSettings,
+              language: nextLanguage,
+            };
+
+            if (currentUser) {
+              persistSession(currentUser, nextSettings);
+            }
+
+            return nextSettings;
+          })()
         : previousSettings,
     );
   };
@@ -100,6 +142,7 @@ function App() {
   const handleLogout = () => {
     setCurrentUser(null);
     setCurrentUserSettings(null);
+    clearStoredSession();
   };
 
   const handleJoinClick = (tournament: Tournament) => {
@@ -160,6 +203,7 @@ function App() {
         onColorChange={handleColorChange}
         userStatus={null}
         onRegisterClick={() => setIsUserRegistrationModalOpen(true)}
+        onLoginClick={() => setIsUserLoginModalOpen(true)}
         language={language}
         onLanguageChange={handleLanguageChange}
         onLogout={handleLogout}
@@ -210,6 +254,14 @@ function App() {
         isOpen={isUserRegistrationModalOpen}
         onClose={() => setIsUserRegistrationModalOpen(false)}
         onRegister={handleUserRegistration}
+        primaryColor={primaryColor}
+        language={language}
+      />
+
+      <UserLoginModal
+        isOpen={isUserLoginModalOpen}
+        onClose={() => setIsUserLoginModalOpen(false)}
+        onLogin={handleUserLogin}
         primaryColor={primaryColor}
         language={language}
       />

@@ -5,7 +5,7 @@ import type { AppLanguage, UserRegistrationData } from '../types/user';
 interface UserRegistrationModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onRegister: (data: UserRegistrationData) => void;
+  onRegister: (data: UserRegistrationData) => Promise<void>;
   primaryColor: string;
   language: AppLanguage;
 }
@@ -24,6 +24,7 @@ export function UserRegistrationModal({
   const [birthDate, setBirthDate] = useState('');
   const [school, setSchool] = useState('');
   const [errors, setErrors] = useState<string[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const copy = {
     UA: {
@@ -109,23 +110,30 @@ export function UserRegistrationModal({
     setErrors([]);
   };
 
-  const handleSubmit = (event: React.FormEvent) => {
+  const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
 
     if (!validateForm()) {
       return;
     }
 
-    onRegister({
-      fullName,
-      username,
-      password,
-      email,
-      birthDate,
-      school: school || undefined,
-    });
-    onClose();
-    resetForm();
+    try {
+      setIsSubmitting(true);
+      await onRegister({
+        fullName,
+        username,
+        password,
+        email,
+        birthDate,
+        school: school || undefined,
+      });
+      onClose();
+      resetForm();
+    } catch (error) {
+      setErrors([error instanceof Error ? error.message : 'Registration failed']);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -253,10 +261,14 @@ export function UserRegistrationModal({
           <div className="pt-4">
             <button
               type="submit"
+              disabled={isSubmitting}
               className="w-full py-3.5 rounded-lg font-semibold text-white transition-all duration-200 hover:opacity-90"
-              style={{ backgroundColor: primaryColor }}
+              style={{
+                backgroundColor: primaryColor,
+                opacity: isSubmitting ? 0.7 : 1,
+              }}
             >
-              {copy.submit}
+              {isSubmitting ? `${copy.submit}...` : copy.submit}
             </button>
           </div>
         </form>

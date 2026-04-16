@@ -1,4 +1,4 @@
-import { Search, Bell, ChevronDown } from 'lucide-react';
+﻿import { Search, Bell, ChevronDown } from 'lucide-react';
 import { useState } from 'react';
 import { SearchDropdown } from './SearchDropdown';
 import { NotificationsDropdown } from './NotificationsDropdown';
@@ -15,6 +15,7 @@ interface HeaderProps {
   onColorChange: (color: string) => void;
   userStatus?: 'admin' | 'team' | 'jury' | null;
   onRegisterClick?: () => void;
+  onLoginClick?: () => void;
   language: AppLanguage;
   onLanguageChange: (lang: AppLanguage) => void;
   onLogout: () => void;
@@ -27,6 +28,7 @@ export function Header({
   onColorChange,
   userStatus = null,
   onRegisterClick,
+  onLoginClick,
   language,
   onLanguageChange,
   onLogout,
@@ -42,12 +44,14 @@ export function Header({
       overview: 'Огляд',
       tournaments: 'Турніри',
       search: 'Пошук...',
+      login: 'Увійти',
       register: 'Зареєструватися',
     },
     EN: {
       overview: 'Overview',
       tournaments: 'Tournaments',
       search: 'Search...',
+      login: 'Login',
       register: 'Sign Up',
     },
   };
@@ -165,18 +169,34 @@ export function Header({
             </div>
           ) : null}
 
-          {!currentUser && onRegisterClick && (
-            <button
-              onClick={onRegisterClick}
-              className="px-4 py-2 rounded-lg font-semibold transition-all duration-200 hover:opacity-90"
-              style={{
-                backgroundColor: primaryColor,
-                color: '#fff',
-                boxShadow: `0 0 20px ${primaryColor}40`,
-              }}
-            >
-              {translations.register}
-            </button>
+          {!currentUser && (onLoginClick || onRegisterClick) && (
+            <div className="flex items-center gap-2">
+              {onLoginClick && (
+                <button
+                  onClick={onLoginClick}
+                  className="rounded-lg border px-4 py-2 font-semibold text-[#EDEDED] transition-all duration-200 hover:bg-[#111115]"
+                  style={{
+                    borderColor: `${primaryColor}60`,
+                    boxShadow: `0 0 12px ${primaryColor}18`,
+                  }}
+                >
+                  {translations.login}
+                </button>
+              )}
+              {onRegisterClick && (
+                <button
+                  onClick={onRegisterClick}
+                  className="px-4 py-2 rounded-lg font-semibold transition-all duration-200 hover:opacity-90"
+                  style={{
+                    backgroundColor: primaryColor,
+                    color: '#fff',
+                    boxShadow: `0 0 20px ${primaryColor}40`,
+                  }}
+                >
+                  {translations.register}
+                </button>
+              )}
+            </div>
           )}
 
           <UserStatus status={userStatus} />
